@@ -1,0 +1,30 @@
+{
+  "name": "container-client",
+  "version": "1.0.0",
+  "description": "Container client collecting and storing container specific runtime information in Deepstream.io running on the Docker host system.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-Thomas-Pilz:Thomas-Pilz/Container-Client.git"
+  },
+  "keywords": [
+    "node",
+    "container",
+    "client",
+    "deepstream",
+    "realtime",
+    "systeminformation"
+  ],
+  "author": "Thomas Pilz",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  },
+  "dependencies": {
+    "@deepstream/client": "^5.1.10",
+    "systeminformation": "^4.28.1"
+  }
+}
