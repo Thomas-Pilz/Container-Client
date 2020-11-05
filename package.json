@@ -4,7 +4,8 @@
   "description": "Container client collecting and storing container specific runtime information in Deepstream.io running on the Docker host system.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js",
+    "run": "node index.js"
   },
   "repository": {
     "type": "git",
