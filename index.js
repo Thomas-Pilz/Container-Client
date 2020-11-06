@@ -93,7 +93,7 @@ async function createRecord(){
 }
 
 function sendRuntimeInfo(data) {
-    record.set(`${containerList}/${containerId}`, data, (err) => {
+    record.set("runtimeInfo", data, (err) => {
         if (err) {
             console.log("Record set failed with error: ", err);
         }
