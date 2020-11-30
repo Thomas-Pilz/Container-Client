@@ -48,6 +48,7 @@ async function registerAgent() {
 function unregisterAgent() {
     const containers = client.record.getList(containerListName);
     containers.removeEntry(`${containerListName}/${containerId}`);
+    console.log(`Unregistration of agent with hostname (= Container-ID): ${containerId} successful.`);
 }
 
 /**
@@ -78,7 +79,7 @@ function exitHandler() {
 async function login2Deepstream() {
     await client.login();
     if (client.getConnectionState() !== 'OPEN') {
-        console.log("Login failed.");
+        console.error("Login failed.");
         process.exit(1);
     }
     console.log(`Login successful.`);
@@ -101,10 +102,10 @@ async function createRecord() {
 
 async function sendRuntimeInfo(data) {
     record = await record;
-    console.log(JSON.stringify(data));
+    console.log(JSON.stringify(data, null, 2));
     record.set("runtimeInfo", data, (err) => {
         if (err) {
-            console.log("Record set failed with error: ", err);
+            console.error("Record set failed with error: ", err);
         }
     });
 };
