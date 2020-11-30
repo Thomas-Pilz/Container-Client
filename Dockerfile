@@ -1,7 +1,8 @@
-FROM node:14-alpine3.12
+FROM node:14-stretch
 COPY package*.json /app/
+WORKDIR /app
 RUN ["npm", "install"]
-COPY . ./app
+COPY . .
 WORKDIR /app
 ENTRYPOINT ["node"]
 CMD ["index.js"]
