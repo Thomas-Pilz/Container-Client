@@ -124,7 +124,6 @@ function getRuntimeInfo() {
         // diskLayout: `device, type, name, vendor, size, serialNum, interfaceType`,
         // blockDevices: `name, type, fstype, mount, size, physical, uuid, label, model, serial, removable, protocol`,
         disksIO: `rIO, wIO, tIO, tIO, rIO_sec, wIO_sec, tIO_sec, ms`,
-        users: '*',     //'user', 'tty', 'date', 'time', 'ip', 'command'],
         networkStats: `*`,
     }
     si.observe(desiredInfo, sendInterval, sendRuntimeInfo);
