@@ -26,6 +26,6 @@
   },
   "dependencies": {
     "@deepstream/client": "^5.1.10",
-    "systeminformation": "^4.28.1"
+    "systeminformation": "^4.32.0"
   }
 }

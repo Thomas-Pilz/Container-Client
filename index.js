@@ -1,5 +1,4 @@
 const { DeepstreamClient } = require("@deepstream/client");
-const client = new DeepstreamClient("deepstream:6020");
 const si = require("systeminformation");
 const os = require("os");
 const fs = require("fs");
@@ -14,6 +13,18 @@ const fs = require("fs");
  * 
  * @author Thomas Pilz
  */
+
+const deepstreamOptions = {
+    // Reconnect after 10, 20 and 30 seconds
+    reconnectIntervalIncrement: 10000,
+    // Try reconnecting every thirty seconds
+    maxReconnectInterval: 30000,
+    // We never want to stop trying to reconnect
+    maxReconnectAttempts: Infinity,
+    // Send heartbeats only once a minute
+    heartbeatInterval: 60000
+};
+const client = new DeepstreamClient("deepstream:6020", deepstreamOptions);
 
 // get container id and cache it
 const containerId = getContainerId();   // this container's container-ID (as given by the docker runtime on the host)
@@ -34,7 +45,7 @@ getRuntimeInfo();
  * @global containerId
  */
 async function registerAgent() {
-    await login2Deepstream();
+    await login2Deepstream().catch(err => console.error(`Registration of container ${containerId} failed with error.\n${err}`));
     const containers = await client.record.getList(containerListName).whenReady();
     containers.addEntry(`${containerListName}/${containerId}`);
     console.log(`Registration of agent with hostname (= Container-ID): ${containerId} successful.`);
@@ -45,32 +56,32 @@ async function registerAgent() {
  * @global containerList
  * @global containerId
  */
-function unregisterAgent() {
+async function unregisterAgent(signal) {
     const containers = client.record.getList(containerListName);
     containers.removeEntry(`${containerListName}/${containerId}`);
-    console.log(`Unregistration of agent with hostname (= Container-ID): ${containerId} successful.`);
+    await client.record.getRecord(`${containerId}`).delete()
+        .catch(err => console.error(`Deletion of container runtime inforamtion of container ${containerId} failed.`))
+    console.log(`Unregistration of agent with hostname (= Container-ID): ${containerId} successful. Reason (/Signal): ${signal}`);
 }
 
 /**
  * Register exit event handler to make sure agent ALWAYS unregisters itself before it terminates
  */
 function registerExitHandler() {
-    process.on('exit', exitHandler);
-    //catches ctrl+c event
-    process.on('SIGINT', exitHandler);
-    // catches "kill pid" (for example: nodemon restart)
-    process.on('SIGUSR1', exitHandler);
-    process.on('SIGUSR2', exitHandler);
-    //catches uncaught exceptions
-    process.on('uncaughtException', exitHandler);
+    signals = ["exit","uncaughtException", "SIGINT", "SIGTERM", "SIGUSR1", "SIGUSR2", "SIGHUP"]
+    signals.forEach( it => {
+        process.on(it, exitHandler)
+        console.log(`Handler set on ${it}`);
+    });
 }
 
 /**
  * Handler method for any (un)expected exit of the program. 
  * Make sure agent ALWAYS unregisters itself.
  */
-function exitHandler() {
-    unregisterAgent();
+async function exitHandler(signal) {
+    await unregisterAgent(signal);
+    process.exit(0)
 }
 
 /**
@@ -97,16 +108,19 @@ async function login2Deepstream() {
  * Create a record within deepstream.io to store the container runtime information
  */
 async function createRecord() {
-    return await client.record.getRecord(`${containerListName}/${containerId}`).whenReady();
+    return await client.record.getRecord(`${containerId}`).whenReady();
 }
 
 async function sendRuntimeInfo(data) {
     record = await record;
-    console.log(JSON.stringify(data, null, 2));
-    record.set("runtimeInfo", data, (err) => {
+    // console.log(JSON.stringify(data, null, 2));
+    record.set(data, async (err) => {
+        console.log(data);
         if (err) {
             console.error("Record set failed with error: ", err);
         }
+        const netStats = await si.networkStats("*");
+        console.log(netStats);
     });
 };
 
@@ -124,7 +138,7 @@ function getRuntimeInfo() {
         // diskLayout: `device, type, name, vendor, size, serialNum, interfaceType`,
         // blockDevices: `name, type, fstype, mount, size, physical, uuid, label, model, serial, removable, protocol`,
         disksIO: `rIO, wIO, tIO, tIO, rIO_sec, wIO_sec, tIO_sec, ms`,
-        networkStats: `*`,
+        networkStats: `iface, operstate, rx_bytes, rx_dropped, rx_errors, tx_bytes, tx_dropped, tx_errors, rx_sec, tx_sec  (*)`,
     }
     si.observe(desiredInfo, sendInterval, sendRuntimeInfo);
 }
@@ -136,10 +150,12 @@ function getRuntimeInfo() {
  */
 function getContainerId() {
     let file;
+    const filename = "/proc/self/cgroup"
     try {
-        file = fs.readFileSync("/proc/self/cgroup", "utf8");
+        file = fs.readFileSync(filename, "utf8");
     } catch (err) {
         // end process with error code
+        console.error(`Cannot get hostname/ container-ID from file ${filename}`)
         process.exit(2);
     }
     let hostname = file.match("(?<=\\/docker\\/)\\w{64}");
