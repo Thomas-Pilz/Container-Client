@@ -115,12 +115,10 @@ async function sendRuntimeInfo(data) {
     record = await record;
     // console.log(JSON.stringify(data, null, 2));
     record.set(data, async (err) => {
-        console.log(data);
         if (err) {
             console.error("Record set failed with error: ", err);
         }
         const netStats = await si.networkStats("*");
-        console.log(netStats);
     });
 };
 
